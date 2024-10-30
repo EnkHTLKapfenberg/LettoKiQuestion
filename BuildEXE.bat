@@ -1,0 +1,1 @@
+python -m PyInstaller --onefile --hidden-import openai CheckLettoQuestion.py
