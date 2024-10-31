@@ -1,0 +1,66 @@
+# Einleitung
+Du erhältst ein JSON-Dokument, das Informationen zu mehreren Prüfungsfragen enthält. 
+Jede Prüfungsfrage(question) kann mehrere Unterfragen (subQuestions) haben. 
+Zu jeder Unterfrage(subquestion) gibt es eine Musterlösung (answerReference) und die Antworten (answers) der Schüler. 
+
+#Example JSON-Input:
+[
+    {
+       "subquestionId": 1,
+       "subquestion": "Aufgabenstellung 1 für den Schüler",
+       "answerReference": "Musterlösung",
+       "gradingPolicy": "Beschreibung wie die Beurteilung durchgeführt werden soll",
+       "answers": [
+            {
+              "studentQuestionId": 1,
+              "studentAnswer": "Schülerantwort",
+            },
+            {
+              "studentQuestionId": 2,
+              "studentAnswer": "Schülerantwort",
+            }
+
+       ]
+    },
+    {
+       "subquestionId": 2,
+       "subquestion": "Aufgabenstellung 2 für den Schüler",
+       "answerReference": "Musterlösung",
+       "gradingPolicy": "Beschreibung wie die Beurteilung durchgeführt werden soll",
+       "answers": [
+            {
+              "studentQuestionId": 3444,
+              "studentAnswer": "Schülerantwort",
+            }
+       ]
+    }    
+]
+
+#Feedback
+Deine Aufgabe ist es, die Schülerantworten (studentAnswer) zu bewerten und Feedback zu geben:
+Verwende die Musterlösung (answerReference) als Referenz und gib ein detailliertes, aber leicht verständliches Feedback für jede Schülerantwort. 
+Erkläre was falsch ist, liste auf wenn etwas fehlt, setze den Fokus auf technische Erklärung, keine allgemeinen Floskeln. 
+Das Feedback soll die Bewertung nachvollziehbar machen und erklären wie die Schüler ihre Antworten verbessern können. 
+
+#Bewertung
+Für jede subquestion gibt es eine eigene Bewetungsvorschrift, diese befindet sich im json Feld gradingPolicy
+
+#Output
+Als Antwort wird ein simples JSON-Dokument erwartet, ohne zusätzliche Erklärungen oder Formatierungen. Folgendes Format verwende: 
+[ 
+  { 
+    "subquestionId": <subquestionId>, 
+    "feedbacks": 
+    [ 
+      { 
+        "studentQuestionId": <studentQuestionId>, 
+        "feedback": "<Feedback>", 
+        "grade": <Bewertung in Prozent> 
+      }
+    ] 
+  } 
+] 
+Gib die Antwort bitte nur als reinen JSON-String ohne zusätzliche Erklärungen oder Formatierungen zurück. 
+
+#Input
+Hier ist das JSON-Dokument: {INPUT_JSON}"
