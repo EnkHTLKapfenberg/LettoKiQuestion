@@ -1,17 +1,22 @@
 import json
+import configparser
 import tkinter as tk
 from tkinter import scrolledtext, messagebox, ttk
-#from openai import OpenAI
 import openai
+
+# Load settings from the ini file
+config = configparser.ConfigParser()
+config.read('settings.ini')
+max_tokens_setting = int(config['DEFAULT'].get('max_tokens', 2000))
 
 # Function to process the input JSON, send requests to ChatGPT, and display results
 def process_input():
-    try:
+    # try:
         input_data = input_text.get("1.0", tk.END).strip()
         input_json = json.loads(input_data)
   
         # Set your OpenAI API key from JSON input file
-        # openai.api_key = input_json["aiKey"]
+        openai.api_key = input_json["aiKey"]
         
         # Extract subquestions with correct answers
         sub_questions = []
@@ -19,37 +24,43 @@ def process_input():
             for sub_question in question.get("subQuestions", []):
                 if "korrekteLoesung" in sub_question and sub_question["korrekteLoesung"]:
                     sub_questions.append({
-                        "idTestfrage": question["idTestfrage"],
-                        "angabe": sub_question["angabe"],
-                        "korrekteLoesung": sub_question["korrekteLoesung"],
-                        "inputs": [{
-                            "idTestDetail": input_item["idTestDetail"],
-                            "text": input_item["text"],
-                            "name": input_item["name"],
-                            "idUser": input_item["idUser"]
+                        "subquestionId": sub_question["idSq"],
+                        "subquestion": sub_question["angabe"],
+                        "answerReference": sub_question["korrekteLoesung"],
+                        "gradingPolicy": sub_question["beurteilungsAnweisung"],                        
+                        "answers": [{
+                            "studentQuestionId": input_item["idTestDetail"],
+                            "studentAnswer": input_item["text"],
+                            "studentName": input_item["name"],
+                            "studentId": input_item["idUser"]
                         } for input_item in sub_question["inputs"]]
                     })
         
         # Build request JSON for ChatGPT
         gpt_requests = [{
-            "idTestfrage": sub_question["idTestfrage"],
-            "angabe": sub_question["angabe"],
-            "korrekteLoesung": sub_question["korrekteLoesung"],
-            "inputs": sub_question["inputs"]
+            "subquestionId": sub_question["subquestionId"],
+            "subquestion": sub_question["subquestion"],
+            "answerReference": sub_question["answerReference"],
+            "gradingPolicy": sub_question["gradingPolicy"],                        
+            "answers": [{
+                "studentQuestionId": answer_item["studentQuestionId"],
+                "studentAnswer": answer_item["studentAnswer"],
+            } for answer_item in sub_question["answers"]]
         } for sub_question in sub_questions]
+ 
+        #check the input.json
+        # print(json.dumps(gpt_requests))
 
-        # Create a prompt explaining how to provide feedback for the student's answers based on the JSON data
-        prompt = (
-            "Du erhältst ein JSON-Dokument, das Informationen zu mehreren Prüfungsfragen enthält. Jede Prüfungsfrage kann mehrere Unterfragen (subQuestions) haben. "
-            "Zu jeder Unterfrage gibt es eine Musterlösung und die Antworten der Schüler. "
-            "Deine Aufgabe ist es, die Schülerantworten zu bewerten und Feedback zu geben, wie die Antworten verbessert werden können. "
-            "Verwende die Musterlösung als Referenz und gib ein detailliertes, aber leicht verständliches Feedback für jede Schülerantwort. "
-            "Als Antwort wird nur ein JSON-Dokument erwartet, das in folgendem Format strukturiert ist: "
-            "[ { \"idTestfrage\": <idTestfrage>, \"subQuestions\": [ { \"bewertungen\": [ { \"idTestDetail\": <idTestDetail>, \"feedback\": \"<Feedback>\", \"bewertung\": <Bewertung in Prozent> } ] } ] } ] "
-            "Gib die Antwort bitte nur als reinen JSON-String ohne zusätzliche Erklärungen oder Formatierungen zurück. "
-            "Hier ist das JSON-Dokument: " + json.dumps(gpt_requests)
-        )
-      
+        # Load prompt from file and add JSON data
+        with open('Promt.txt', 'r', encoding='utf-8') as file:
+            template = file.read()
+
+        prompt = template.replace("{INPUT_JSON}", json.dumps(gpt_requests))
+
+        #check the final promt
+        #print(prompt)
+        #return
+        
         # Send the request to ChatGPT
         client = openai.OpenAI(
             # This is the default and can be omitted
@@ -64,27 +75,44 @@ def process_input():
             ],
             model="gpt-4o-mini",
 #            model="gpt-3.5-turbo",
-            max_tokens=2000
-        )      
+            max_tokens=max_tokens_setting
+        )     
+        
+        # Extract token usage information
+        prompt_tokens = response.usage.prompt_tokens
+        completion_tokens = response.usage.completion_tokens
+        tokens_used = response.usage.total_tokens
+        print(f"Tokens: Promt {prompt_tokens}, completion {completion_tokens}, Total used: {tokens_used}")        
+        
         # Extract and modify responses
         feedbacks = response.choices[0].message.content
         if feedbacks.startswith("```json"):
             feedbacks = feedbacks.splitlines()[1:-1]
             feedbacks = "\n".join(feedbacks)
               
-        print(feedbacks)     
-        feedbacks = json.loads(feedbacks)   
-        for feedback in feedbacks:
-            for question in input_json["questions"]:
-                if question["idTestfrage"] == feedback["idTestfrage"]:
-                    feedback["name"] = question.get("name", "Unbekannt")
-                    for sub_question, feedback_sub_question in zip(question.get("subQuestions", []), feedback.get("subQuestions", [])):
-                        for input_item, bewertung in zip(sub_question["inputs"], feedback_sub_question["bewertungen"]):
-                            if input_item["idTestDetail"] == bewertung["idTestDetail"]:
-                                bewertung["name"] = input_item["name"]
-                                bewertung["idUser"] = input_item["idUser"]
-                                bewertung["bewertung"] = bewertung.get("bewertung", "0")
+        # Save feedbacks to response.json
+        with open('response.json', 'w', encoding='utf-8') as response_file:
+            response_file.write(feedbacks)
+
+        #with open('response.json', 'r', encoding='utf-8') as file:
+        #    feedbacks = file.read()      
         
+        #add user data to responce (result visualisation)
+        subQuestionResponces = json.loads(feedbacks)   
+        for subQuestionResponce in subQuestionResponces:
+            for sub_question in sub_questions:
+                if sub_question["subquestionId"] == subQuestionResponce["subquestionId"]:                    
+                    subQuestionResponce["name"] = sub_question.get("name", "Unbekannt")
+                    for awsner, feedback in zip (sub_question.get("answers", []), subQuestionResponce.get("feedbacks", [])):
+                        if awsner["studentQuestionId"] == feedback["studentQuestionId"]:
+                            feedback["studentName"] = awsner["studentName"]
+                            feedback["studentId"] = awsner["studentId"]
+                            # feedback["feedback"] = feedback.get("feedback", "0")
+        
+        # print("-----------------------------------------")
+        # print(json.dumps(subQuestionResponces))
+        # print("=========================================")
+
         # Clear previous feedbacks in the output frame
         for widget in output_frame.winfo_children():
             widget.destroy()
@@ -93,42 +121,39 @@ def process_input():
         sub_question_notebook = ttk.Notebook(output_frame)
         sub_question_notebook.pack(fill=tk.BOTH, expand=True)
 
-        question_index = 0
-        for question in feedbacks:
-            question_index += 1
-            sub_question_index = 0
-            for sub_question in question["subQuestions"]:
-                sub_question_index += 1
+        sub_question_index = 0
+        for subQuestionResponce in subQuestionResponces:
+            sub_question_index += 1
                 
-                sub_question_frame = tk.Frame(sub_question_notebook)
-                sub_question_notebook.add(sub_question_frame, text=f"{question_index}.{sub_question_index}")
+            sub_question_frame = tk.Frame(sub_question_notebook)
+            sub_question_notebook.add(sub_question_frame, text=f"{sub_question_index}")
                 
-                student_notebook = ttk.Notebook(sub_question_frame)
-                student_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+            student_notebook = ttk.Notebook(sub_question_frame)
+            student_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-                for bewertung in sub_question["bewertungen"]:
-                    student_frame = tk.Frame(student_notebook)
-                    student_notebook.add(student_frame, text=bewertung["name"])
+            for feedback in subQuestionResponce.get("feedbacks", []):
+                student_frame = tk.Frame(student_notebook)
+                student_notebook.add(student_frame, text=feedback["studentName"])
                     
-                    name_label = tk.Label(student_frame, text=f"Schülername: {bewertung['name']}", anchor='w')
-                    name_label.pack(fill=tk.X, padx=5, pady=(10, 2))
+                name_label = tk.Label(student_frame, text=f"Schülername: {feedback['studentName']}", anchor='w')
+                name_label.pack(fill=tk.X, padx=5, pady=(10, 2))
                     
-                    feedback_label = tk.Label(student_frame, text="Feedback:", anchor='w')
-                    feedback_label.pack(fill=tk.X, padx=5)
-                    feedback_text = scrolledtext.ScrolledText(student_frame, wrap=tk.WORD, width=80, height=5)
-                    feedback_text.insert(tk.END, bewertung["feedback"])
-                    feedback_text.pack(fill=tk.X, padx=5, pady=2)
+                feedback_label = tk.Label(student_frame, text="Feedback:", anchor='w')
+                feedback_label.pack(fill=tk.X, padx=5)
+                feedback_text = scrolledtext.ScrolledText(student_frame, wrap=tk.WORD, width=80, height=5)
+                feedback_text.insert(tk.END, feedback["feedback"])
+                feedback_text.pack(fill=tk.X, padx=5, pady=2)
                     
-                    bewertung_label = tk.Label(student_frame, text="Bewertung:", anchor='w')
-                    bewertung_label.pack(fill=tk.X, padx=5)
-                    bewertung_entry = tk.Entry(student_frame, width=10)
-                    bewertung_entry.insert(0, f"{bewertung['bewertung']}%")
-                    bewertung_entry.pack(fill=tk.X, padx=5, pady=(2, 10))
+                bewertung_label = tk.Label(student_frame, text="Bewertung:", anchor='w')
+                bewertung_label.pack(fill=tk.X, padx=5)
+                bewertung_entry = tk.Entry(student_frame, width=10)
+                bewertung_entry.insert(0, f"{feedback['grade']}%")
+                bewertung_entry.pack(fill=tk.X, padx=5, pady=(2, 10))
 
-    except json.JSONDecodeError:
-        messagebox.showerror("Fehler", "Eingabedaten sind kein gültiger JSON-String.")
-    except Exception as e:
-        messagebox.showerror("Fehler", str(e))
+    #except json.JSONDecodeError:
+    #    messagebox.showerror("Fehler", "Eingabedaten sind kein gültiger JSON-String.")
+    #except Exception as e:
+    #    messagebox.showerror("Fehler", str(e))
 
 # Set up GUI
 root = tk.Tk()
