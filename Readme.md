@@ -17,13 +17,13 @@ Diese Informationen werden auf einer GUI angezeigt.
 
 Vorab wird Folgendes benötigt:
 
-- API-Key von OpenAI (siehe auch [ReadME API Token.md](ReadME%20API%20Token.md))
+- API-Key von OpenAI (siehe auch [Readme_API_Token.md](Readme_API_Token.md))
 - Prompt für OpenAI (siehe [Prompt.txt](Prompt.txt))
 - Freitextfrage in LETTO
 
 ## 3.2 OpenAI API Token
 
-Den Token von OpenAI beziehen (siehe [ReadME API Token.md](ReadME%20API%20Token.md)). Den Token in den [LETTO Bibliotheks-Einstellungen](https://doc.letto.at/wiki/FreitextExport/) eintragen.
+Den Token von OpenAI beziehen (siehe [Readme_API_Token.md](Readme_API_Token.md)). Den Token in den [LETTO Bibliotheks-Einstellungen](https://doc.letto.at/wiki/FreitextExport/) eintragen.
 
 ## 3.3 Vorbereitung der Fragen
 
@@ -102,4 +102,4 @@ In der Datei [Prompt.txt](Prompt.txt) befindet sich das Template für den Prompt
 - **BuildEXE.bat** - Erstellt aus der Python-Datei eine EXE-Datei
 - **CheckLettoQuestion.py** - Das Python-Skript
 - **Prompt.txt** - Das Prompt-Template
-- **ReadMe API Token.md** - Beschreibt, wie man zum API-Token kommt
+- **Readme_API_Token.md** - Beschreibt, wie man zum API-Token kommt
