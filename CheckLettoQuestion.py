@@ -52,7 +52,7 @@ def process_input():
         # print(json.dumps(gpt_requests))
 
         # Load prompt from file and add JSON data
-        with open('Promt.txt', 'r', encoding='utf-8') as file:
+        with open('Prompt.txt', 'r', encoding='utf-8') as file:
             template = file.read()
 
         prompt = template.replace("{INPUT_JSON}", json.dumps(gpt_requests))
