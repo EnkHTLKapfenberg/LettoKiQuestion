@@ -2,6 +2,7 @@ import json
 import configparser
 import tkinter as tk
 from tkinter import scrolledtext, messagebox, ttk
+from ScrollableNotebook import *
 import openai
 
 # Load settings from the ini file
@@ -58,8 +59,9 @@ def process_input():
         prompt = template.replace("{INPUT_JSON}", json.dumps(gpt_requests))
 
         #check the final promt
-        #print(prompt)
-        #return
+        with open('prompt_sent2_ChatGPT.json', 'w', encoding='utf-8') as prompt_file:
+            prompt_file.write(prompt)
+        # return
         
         # Send the request to ChatGPT
         client = openai.OpenAI(
@@ -74,7 +76,7 @@ def process_input():
                 }
             ],
             model="gpt-4o-mini",
-#            model="gpt-3.5-turbo",
+          # model="gpt-3.5-turbo",
             max_tokens=max_tokens_setting
         )     
         
@@ -94,8 +96,8 @@ def process_input():
         with open('response.json', 'w', encoding='utf-8') as response_file:
             response_file.write(feedbacks)
 
-        #with open('response.json', 'r', encoding='utf-8') as file:
-        #    feedbacks = file.read()      
+        # with open('response.json', 'r', encoding='utf-8') as file:
+        #     feedbacks = file.read()      
         
         #add user data to responce (result visualisation)
         subQuestionResponces = json.loads(feedbacks)   
@@ -103,10 +105,11 @@ def process_input():
             for sub_question in sub_questions:
                 if sub_question["subquestionId"] == subQuestionResponce["subquestionId"]:                    
                     subQuestionResponce["name"] = sub_question.get("name", "Unbekannt")
-                    for awsner, feedback in zip (sub_question.get("answers", []), subQuestionResponce.get("feedbacks", [])):
-                        if awsner["studentQuestionId"] == feedback["studentQuestionId"]:
-                            feedback["studentName"] = awsner["studentName"]
-                            feedback["studentId"] = awsner["studentId"]
+                    for answer, feedback in zip (sub_question.get("answers", []), subQuestionResponce.get("feedbacks", [])):
+                        if answer["studentQuestionId"] == feedback["studentQuestionId"]:
+                            feedback["studentName"] = answer["studentName"]
+                            feedback["studentId"] = answer["studentId"]
+                            feedback["studentAnswer"] = answer["studentAnswer"]
                             # feedback["feedback"] = feedback.get("feedback", "0")
         
         # print("-----------------------------------------")
@@ -128,13 +131,14 @@ def process_input():
             sub_question_frame = tk.Frame(sub_question_notebook)
             sub_question_notebook.add(sub_question_frame, text=f"{sub_question_index}")
                 
-            student_notebook = ttk.Notebook(sub_question_frame)
+            #student_notebook = ttk.Notebook(sub_question_frame)
+            student_notebook =ScrollableNotebook(sub_question_frame,wheelscroll=True,tabmenu=True)
             student_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
             for feedback in subQuestionResponce.get("feedbacks", []):
                 student_frame = tk.Frame(student_notebook)
                 student_notebook.add(student_frame, text=feedback["studentName"])
-                    
+                                        
                 name_label = tk.Label(student_frame, text=f"Schülername: {feedback['studentName']}", anchor='w')
                 name_label.pack(fill=tk.X, padx=5, pady=(10, 2))
                     
@@ -150,6 +154,12 @@ def process_input():
                 bewertung_entry.insert(0, f"{feedback['grade']}%")
                 bewertung_entry.pack(fill=tk.X, padx=5, pady=(2, 10))
 
+                answer_label = tk.Label(student_frame, text="Schülerantwort:", anchor='w')
+                answer_label.pack(fill=tk.X, padx=5)
+                answer_label = scrolledtext.ScrolledText(student_frame, wrap=tk.WORD, width=80, height=5)
+                answer_label.insert(tk.END, feedback["studentAnswer"])
+                answer_label.pack(fill=tk.X, padx=5, pady=2)
+
     #except json.JSONDecodeError:
     #    messagebox.showerror("Fehler", "Eingabedaten sind kein gültiger JSON-String.")
     #except Exception as e:
@@ -158,7 +168,7 @@ def process_input():
 # Set up GUI
 root = tk.Tk()
 root.title("ChatGPT Test Feedback")
-root.geometry("800x800")
+root.geometry("900x800")
 
 # Input label and text area
 input_label = tk.Label(root, text="Eingabe JSON String:")

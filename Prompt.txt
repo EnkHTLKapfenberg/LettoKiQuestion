@@ -38,8 +38,9 @@ Zu jeder Unterfrage(subquestion) gibt es eine Musterlösung (answerReference) un
 
 #Feedback
 Deine Aufgabe ist es, die Schülerantworten (studentAnswer) zu bewerten und Feedback zu geben:
-Verwende die Musterlösung (answerReference) als Referenz und gib ein detailliertes, aber leicht verständliches Feedback für jede Schülerantwort. 
-Erkläre was falsch ist, liste auf wenn etwas fehlt, setze den Fokus auf technische Erklärung, keine allgemeinen Floskeln. 
+Verwende die Musterlösung (answerReference) als Referenz und vergleiche die Schülerantwort mit der Musterlösung.
+Gib ein detailliertes, aber leicht verständliches Feedback für jede Schülerantwort. 
+Erkläre was falsch ist und korrigiere die Antwort, liste auf wenn etwas fehlt, setze den Fokus auf technische Erklärung, keine allgemeinen Floskeln. 
 Das Feedback soll die Bewertung nachvollziehbar machen und erklären wie die Schüler ihre Antworten verbessern können. 
 
 #Bewertung
